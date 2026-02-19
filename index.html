@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LibCat Pro (Library Bibliographic Manager)</title>
+    <style>
+        /* ================= GLOBAL STYLES ================= */
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #34495e;
+            --accent-color: #2980b9;
+            --success-color: #27ae60;
+            --bg-color: #f4f7f6;
+            --card-bg: #ffffff;
+            --text-color: #333;
+            --border-radius: 8px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+
+        body { background-color: var(--bg-color); color: var(--text-color); line-height: 1.6; padding-bottom: 50px; }
+
+        /* Header - UPDATED FOR LOGOUT BUTTON */
+        header { 
+            background-color: var(--primary-color); 
+            color: white; 
+            padding: 1.5rem 2rem; 
+            /* Flexbox to align Title Left and Logout Right */
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
+        }
+        
+        .header-content h1 { font-size: 1.8rem; margin-bottom: 0.5rem; }
+        .header-content p { font-size: 0.9rem; opacity: 0.8; }
+
+        /* Tabs */
+        .tabs { display: flex; justify-content: center; margin-top: 20px; gap: 10px; }
+        .tab-btn { padding: 10px 25px; background-color: var(--card-bg); border: 2px solid var(--accent-color); color: var(--accent-color); cursor: pointer; font-weight: bold; border-radius: var(--border-radius); transition: all 0.3s ease; }
+        .tab-btn.active, .tab-btn:hover { background-color: var(--accent-color); color: white; }
+
+        .container { max-width: 1200px; margin: 20px auto; padding: 0 15px; }
+        .panel { display: none; animation: fadeIn 0.5s; }
+        .panel.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Cards */
+        .card { background: var(--card-bg); border-radius: var(--border-radius); padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border-left: 5px solid var(--accent-color); }
+        .card h3 { margin-bottom: 15px; color: var(--primary-color); border-bottom: 1px solid #eee; padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+
+        /* Grids */
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
+
+        /* Inputs */
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: 600; font-size: 0.9rem; }
+        .form-group input, .form-group select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 0.95rem; }
+        .form-group input:focus { outline: none; border-color: var(--accent-color); }
+
+        /* Buttons */
+        .btn { display: inline-block; padding: 10px 20px; background-color: var(--success-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.95rem; transition: background 0.2s; margin-right: 5px; }
+        .btn:hover { background-color: #219150; }
+        .btn-secondary { background-color: #95a5a6; }
+        .btn-secondary:hover { background-color: #7f8c8d; }
+        .btn-export { background-color: #e67e22; }
+        .btn-export:hover { background-color: #d35400; }
+        .btn-import { background-color: #8e44ad; }
+        .btn-import:hover { background-color: #732d91; }
+        .btn-action { background-color: var(--secondary-color); width: 100%; margin-top: 10px;}
+        .btn-download { background-color: var(--accent-color); width: 100%; margin-top: 10px; display: none; }
+
+        /* File Upload */
+        input[type="file"] { display: none; }
+        .file-label { display: block; padding: 15px; border: 2px dashed #ccc; text-align: center; border-radius: var(--border-radius); cursor: pointer; color: #666; transition: all 0.3s; }
+        .file-label:hover { border-color: var(--accent-color); background-color: #f0f8ff; color: var(--accent-color); }
+
+        /* Table for Excel */
+        .table-container { overflow-x: auto; margin-top: 20px; border: 1px solid #ddd; border-radius: var(--border-radius); max-height: 400px; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.85rem; min-width: 800px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; white-space: nowrap; }
+        th { background-color: var(--secondary-color); color: white; position: sticky; top: 0; }
+
+        /* Text Preview for MARC */
+        .text-preview {
+            width: 100%;
+            height: 400px;
+            font-family: 'Courier New', Courier, monospace;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #fcfcfc;
+            white-space: pre;
+            overflow-y: scroll;
+            font-size: 0.85rem;
+        }
+
+        /* Toast */
+        #toast { visibility: hidden; min-width: 250px; background-color: #333; color: #fff; text-align: center; border-radius: 4px; padding: 16px; position: fixed; z-index: 1; left: 50%; bottom: 30px; transform: translateX(-50%); }
+        #toast.show { visibility: visible; animation: fadein 0.5s, fadeout 0.5s 2.5s; }
+        @keyframes fadein { from {bottom: 0; opacity: 0;} to {bottom: 30px; opacity: 1;} }
+        @keyframes fadeout { from {bottom: 30px; opacity: 1;} to {bottom: 0; opacity: 0;} }
+        
+        .helper-text { font-size: 0.8rem; color: #7f8c8d; margin-top: 4px; }
+
+        /* ================= LOGIN OVERLAY STYLES ================= */
+        #login-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.98); /* Very dark background */
+            z-index: 999999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        .login-box {
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            text-align: center;
+            width: 90%;
+            max-width: 400px;
+        }
+
+        .login-box h2 {
+            margin-bottom: 20px;
+            color: var(--primary-color);
+        }
+
+        .login-input {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 1rem;
+            text-align: center;
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 12px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .login-btn:hover {
+            background-color: #1a252f;
+        }
+
+        #login-msg {
+            margin-top: 15px;
+            color: #c0392b;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+
+        /* Hide the main app until logged in */
+        #app-container { display: none; }
+    </style>
+</head>
+<body>
+
+    <!-- ================= LOGIN OVERLAY ================= -->
+    <div id="login-overlay">
+        <div class="login-box">
+            <h2>LibCat Library Manager Login</h2>
+            <input type="password" id="login-pass" class="login-input" placeholder="Enter Password" onkeydown="if(event.key === 'Enter') checkLogin()">
+            <button class="login-btn" onclick="checkLogin()">Login</button>
+            <div id="login-msg"></div>
+        </div>
+    </div>
+
+    <!-- ================= MAIN APP CONTENT ================= -->
+    <div id="app-container">
+        <header>
+            <div class="header-content">
+                <h1>LibCat Pro (Library Bibliographic Manager)</h1>
+                <p>Koha Compatible MARC & Excel Processing Tool</p>
+            </div>
+            <!-- NEW LOGOUT BUTTON -->
+            <button class="btn btn-secondary" onclick="logoutUser()">Logout</button>
+        </header>
+
+        <div class="tabs">
+            <button class="tab-btn active" onclick="openTab('excel-section')">Excel / CSV Mode</button>
+            <button class="tab-btn" onclick="openTab('marc-section')">MARC Text Mode</button>
+        </div>
+
+        <div class="container">
+
+            <!-- ================= EXCEL SECTION ================= -->
+            <div id="excel-section" class="panel active">
+                
+                <!-- Upload -->
+                <div class="card">
+                    <h3>1. Upload Excel/CSV File</h3>
+                    <p class="helper-text">CSV file must have 650_full column for subjects.</p>
+                    <br>
+                    <label for="file-excel" class="file-label">Click to Upload CSV File</label>
+                    <input type="file" id="file-excel" accept=".csv">
+                    <div id="file-info-excel" style="margin-top:10px; font-weight:bold; color:var(--success-color);"></div>
+                </div>
+
+                <!-- Tools -->
+                <div class="grid-2">
+                    <!-- Static Tags -->
+                    <div class="card">
+                        <h3>2. Static Tags <button class="btn btn-secondary" style="padding:5px 10px; font-size:0.8rem;" onclick="clearStaticInputs('excel')">Clear</button></h3>
+                        <div class="grid-2">
+                            <div class="form-group"><label>942$b</label><input type="text" id="excel-942b"></div>
+                            <div class="form-group"><label>942$c</label><input type="text" id="excel-942c"></div>
+                            <div class="form-group"><label>952$y</label><input type="text" id="excel-952y"></div>
+                            <div class="form-group"><label>952$a</label><input type="text" id="excel-952a"></div>
+                            <div class="form-group"><label>952$b</label><input type="text" id="excel-952b"></div>
+                        </div>
+                        <button class="btn btn-action" onclick="processExcelData()">Add Static Tags</button>
+                    </div>
+
+                    <!-- Operations -->
+                    <div class="card">
+                        <h3>3. Operations</h3>
+                        <div class="grid-2">
+                            <button class="btn btn-action" onclick="mergeCallNumbers('excel')">Merge 050/060</button>
+                            <button class="btn btn-action" onclick="fixBarcodes('excel')">Fix Barcodes</button>
+                            <button class="btn btn-action" onclick="applyPunctuation('excel')">Apply Punctuation</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Preview -->
+                <div class="card">
+                    <h3>4. Preview & Download</h3>
+                    <div class="table-container">
+                        <table id="excel-table">
+                            <thead><tr><th>No Data Loaded</th></tr></thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                    <button id="dl-excel" class="btn btn-download" onclick="downloadCSV('excel')">Download CSV</button>
+                    <!-- NEW BUTTON: Excel to MARC -->
+                    <button id="generate-marc-from-excel" class="btn btn-download btn-import" style="display:none;" onclick="generateMARCFromExcel()">Generate MARC File (.txt)</button>
+                </div>
+            </div>
+
+            <!-- ================= MARC SECTION ================= -->
+            <div id="marc-section" class="panel">
+                
+                <!-- Upload -->
+                <div class="card">
+                    <h3>1. Upload MARC/Text File</h3>
+                    <p class="helper-text">Upload .txt/.mrc to convert or process.</p>
+                    <br>
+                    <label for="file-marc" class="file-label">Click to Upload MARC/Text File</label>
+                    <input type="file" id="file-marc" accept=".txt,.mrc,.csv">
+                    <div id="file-info-marc" style="margin-top:10px; font-weight:bold; color:var(--success-color);"></div>
+                </div>
+
+                <!-- Static Tags -->
+                <div class="card">
+                    <h3>2. Static Data Configuration <button class="btn btn-secondary" style="padding:5px 10px; font-size:0.8rem;" onclick="clearStaticInputs('marc')">Clear</button></h3>
+                    <div class="grid-2">
+                        <div class="form-group"><label>942$b</label><input type="text" id="marc-942b"></div>
+                        <div class="form-group"><label>942$c</label><input type="text" id="marc-942c"></div>
+                        <div class="form-group"><label>952$y</label><input type="text" id="marc-952y"></div>
+                        <div class="form-group"><label>952$a</label><input type="text" id="marc-952a"></div>
+                        <div class="form-group"><label>952$b</label><input type="text" id="marc-952b"></div>
+                    </div>
+                </div>
+
+                <!-- MARC Operations -->
+                <div class="card">
+                    <h3>3. MARC Operations</h3>
+                    <div class="grid-3">
+                        <div>
+                            <button class="btn btn-action" onclick="applyPunctuation('marc')">Punctuation (Clean & Fix)</button>
+                        </div>
+                        <div>
+                            <button class="btn btn-action" onclick="generateMarcLines()">Append 942/952</button>
+                        </div>
+                        <div>
+                            <!-- NEW BUTTON: MARC to Excel -->
+                            <button class="btn btn-action btn-export" onclick="exportMARCtoCSV()">Export to Excel/CSV</button>
+                        </div>
+                    </div>
+                    <p class="helper-text" style="margin-top:10px;">
+                        <strong>Updates:</strong> Export now includes 100$a. Punctuation fixes 260 Year & 300 Semicolon logic.
+                    </p>
+                </div>
+
+                <!-- Preview -->
+                <div class="card">
+                    <h3>4. Preview & Download</h3>
+                    <div id="marc-preview" class="text-preview">No Data Loaded...</div>
+                    <button id="dl-marc" class="btn btn-download" onclick="downloadMarcFile()">Download Processed Text File</button>
+                </div>
+            </div>
+
+        </div>
+    </div> <!-- End App Container -->
+
+    <div id="toast">Message</div>
+
+    <script>
+        // ================= LOGIN LOGIC =================
+        // Aap yahan se apna password change kar sakte hain
+        const CORRECT_PASSWORD = "Pwd@0487"; 
+
+        function checkLogin() {
+            var inputPass = document.getElementById("login-pass").value;
+            var msgBox = document.getElementById("login-msg");
+
+            if (inputPass === CORRECT_PASSWORD) {
+                // App show karein
+                document.getElementById("login-overlay").style.display = "none";
+                document.getElementById("app-container").style.display = "block";
+                msgBox.innerText = "";
+                showToast("Welcome to Library Manager");
+            } else {
+                msgBox.innerText = "Incorrect Password!";
+                document.getElementById("login-pass").value = "";
+                document.getElementById("login-pass").focus();
+            }
+        }
+
+        // ================= NEW: LOGOUT LOGIC =================
+        function logoutUser() {
+            // App hide karein
+            document.getElementById("app-container").style.display = "none";
+            // Login screen wapas show karein
+            document.getElementById("login-overlay").style.display = "flex";
+            // Password field clear karein
+            document.getElementById("login-pass").value = "";
+            document.getElementById("login-msg").innerText = "";
+            showToast("Logged out successfully.");
+        }
+
+        // ================= APP STATE MANAGEMENT =================
+        let appState = {
+            excel: { headers: [], rows: [] },
+            marc: { rawRecords: [] } 
+        };
+
+        // --- Tabs ---
+        function openTab(id) {
+            document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            const idx = id === 'excel-section' ? 0 : 1;
+            document.querySelectorAll('.tab-btn')[idx].classList.add('active');
+        }
+
+        function showToast(msg) {
+            const t = document.getElementById("toast");
+            t.textContent = msg;
+            t.className = "show";
+            setTimeout(() => t.className = t.className.replace("show", ""), 3000);
+        }
+
+        function clearStaticInputs(type) {
+            const prefix = type === 'excel' ? 'excel' : 'marc';
+            const ids = ['942b', '942c', '952y', '952a', '952b'];
+            ids.forEach(id => document.getElementById(`${prefix}-${id}`).value = '');
+            showToast("Form cleared.");
+        }
+
+        // ================= EXCEL LOGIC =================
+
+        document.getElementById('file-excel').addEventListener('change', function(e) {
+            handleCSV(e.target.files[0], 'excel');
+        });
+
+        function handleCSV(file, type) {
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const text = e.target.result;
+                const data = parseCSV(text);
+                appState[type] = data;
+                document.getElementById(`file-info-${type}`).textContent = `Loaded: ${file.name} (${data.rows.length} rows)`;
+                document.getElementById(`dl-${type}`).style.display = 'inline-block';
+                
+                if(type === 'excel') document.getElementById('generate-marc-from-excel').style.display = 'inline-block';
+                
+                renderTable(type);
+                showToast(`${file.name} loaded!`);
+            };
+            reader.readAsText(file);
+        }
+
+        function parseCSV(text) {
+            const lines = text.split(/\r\n|\n/).filter(l => l.trim() !== '');
+            if (!lines.length) return { headers: [], rows: [] };
+            
+            const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
+            const rows = [];
+            
+            for (let i = 1; i < lines.length; i++) {
+                const rowStr = lines[i];
+                const rowValues = [];
+                let inQuote = false, val = '';
+                
+                for(let char of rowStr) {
+                    if (char === '"') { inQuote = !inQuote; }
+                    else if (char === ',' && !inQuote) { rowValues.push(val.trim()); val = ''; }
+                    else { val += char; }
+                }
+                rowValues.push(val.trim());
+
+                if (rowValues.length === headers.length) {
+                    let rowObj = {};
+                    headers.forEach((h, idx) => rowObj[h] = rowValues[idx] || '');
+                    rows.push(rowObj);
+                }
+            }
+            return { headers, rows };
+        }
+
+        function renderTable(type) {
+            const thead = document.querySelector(`#${type}-table thead`);
+            const tbody = document.querySelector(`#${type}-table tbody`);
+            thead.innerHTML = ''; tbody.innerHTML = '';
+            const { headers, rows } = appState[type];
+
+            const trH = document.createElement('tr');
+            headers.forEach(h => { const th = document.createElement('th'); th.textContent = h; trH.appendChild(th); });
+            thead.appendChild(trH);
+
+            rows.slice(0, 50).forEach(row => {
+                const tr = document.createElement('tr');
+                headers.forEach(h => { 
+                    const td = document.createElement('td'); 
+                    td.textContent = row[h] || ''; 
+                    td.title = row[h] || '';
+                    tr.appendChild(td); 
+                });
+                tbody.appendChild(tr);
+            });
+            if(rows.length > 50) {
+                const tr = document.createElement('tr');
+                const td = document.createElement('td');
+                td.colSpan = headers.length;
+                td.textContent = `... and ${rows.length - 50} more rows`;
+                tbody.appendChild(tr);
+            }
+        }
+
+        function processExcelData() {
+            if(appState.excel.rows.length === 0) return showToast("Upload file first.");
+            const p = 'excel';
+            const tags = [
+                {id:'942b', col:'942$b'}, {id:'942c', col:'942$c'}, 
+                {id:'952y', col:'952$y'}, {id:'952a', col:'952$a'}, {id:'952b', col:'952$b'}
+            ];
+            
+            tags.forEach(t => {
+                const val = document.getElementById(`${p}-${t.id}`).value.trim();
+                if(val) {
+                    if(!appState.excel.headers.includes(t.col)) appState.excel.headers.push(t.col);
+                    appState.excel.rows.forEach(r => r[t.col] = val);
+                }
+            });
+            renderTable('excel');
+            showToast("Static tags added.");
+        }
+
+        function mergeCallNumbers(type) {
+            if(type === 'excel') {
+                if(!appState.excel.rows.length) return showToast("Upload file first.");
+                const rows = appState.excel.rows;
+                if(!appState.excel.headers.includes('952$o')) appState.excel.headers.push('952$o');
+                
+                rows.forEach(r => {
+                    let cn = "";
+                    if(r['060$a']) cn += r['060$a'];
+                    if(r['060$b']) cn += " " + r['060$b'];
+                    if(cn.trim() === "") {
+                        if(r['050$a']) cn += r['050$a'];
+                        if(r['050$b']) cn += " " + r['050$b'];
+                    }
+                    if(cn.trim()) r['952$o'] = cn.trim();
+                });
+                renderTable('excel');
+                showToast("Call numbers merged.");
+            } else {
+                updateMarcPreview();
+                showToast("Call number logic queued.");
+            }
+        }
+
+        function fixBarcodes(type) {
+            if(type === 'excel') {
+                if(!appState.excel.rows.length) return showToast("Upload file first.");
+                const rows = appState.excel.rows;
+                if(!appState.excel.headers.includes('952$p')) appState.excel.headers.push('952$p');
+                
+                let count = 0;
+                rows.forEach(r => {
+                    let bc = r['541$e'] || r['952$p'] || "";
+                    if(bc) {
+                        const clean = bc.toString().replace(/\D/g,'');
+                        r['952$p'] = clean.padStart(8, '0');
+                        count++;
+                    }
+                });
+                renderTable('excel');
+                showToast(`${count} barcodes fixed.`);
+            } else {
+                updateMarcPreview();
+                showToast("Barcode logic queued.");
+            }
+        }
+
+        // ================= CLEAN PUNCTUATION LOGIC (UPDATED) =================
+        function applyPunctuation(type) {
+            const cleanEnd = (str) => {
+                if(!str) return "";
+                return str.replace(/[.,\/;:]$/, '').trim();
+            };
+
+            const process = (row) => {
+                // --- 245 LOGIC ---
+                let a245 = cleanEnd(row['245$a']);
+                let b245 = cleanEnd(row['245$b']);
+                let c245 = cleanEnd(row['245$c']);
+
+                if (b245) {
+                    row['245$a'] = a245 + " :";
+                    row['245$b'] = b245 + " /";
+                } else {
+                    row['245$a'] = a245 + " /";
+                }
+                row['245$c'] = c245;
+
+                // --- 260 LOGIC (FIXED) ---
+                let a260 = cleanEnd(row['260$a']);
+                let b260 = cleanEnd(row['260$b']);
+                let c260 = cleanEnd(row['260$c']);
+
+                if (a260) row['260$a'] = a260 + " :";
+                else row['260$a'] = "";
+
+                if (b260) {
+                    row['260$b'] = b260 + (c260 ? "," : ".");
+                } else {
+                    row['260$b'] = "";
+                }
+
+                if (c260) {
+                    row['260$c'] = c260 + ".";
+                } else {
+                    row['260$c'] = "";
+                }
+
+                // --- 300 LOGIC (FIXED SEMICOLON) ---
+                let a300 = (row['300$a'] || '').replace(/pages/gi, 'p.');
+                a300 = cleanEnd(a300);
+                
+                let b300 = cleanEnd(row['300$b']);
+                let c300 = cleanEnd(row['300$c']);
+
+                if (a300) {
+                    row['300$a'] = a300 + (b300 ? " :" : (c300 ? " ;" : ""));
+                } else {
+                    row['300$a'] = "";
+                }
+
+                if (b300) {
+                    row['300$b'] = b300 + (c300 ? " ;" : "");
+                } else {
+                    row['300$b'] = "";
+                }
+
+                if (c300) {
+                    row['300$c'] = c300 + ".";
+                } else {
+                    row['300$c'] = "";
+                }
+            };
+
+            if(type === 'excel') {
+                if(!appState.excel.rows.length) return showToast("Upload file first.");
+                appState.excel.rows.forEach(process);
+                renderTable('excel');
+                showToast("Punctuation Cleaned & Applied (Excel).");
+            } else {
+                if(appState.marc.rawRecords.length === 0) return showToast("Upload file first.");
+                appState.marc.rawRecords = appState.marc.rawRecords.map(record => {
+                    let lines = record.split('\n');
+                    lines = lines.map(line => {
+                        const tagMatch = line.match(/^=(\d{3})/);
+                        if (tagMatch) {
+                            const tag = tagMatch[1];
+                            const getSubs = () => {
+                                const subs = {};
+                                let m;
+                                const r = /\$([a-z])([^$]*)/g;
+                                while ((m = r.exec(line)) !== null) subs[m[1]] = m[2].trim();
+                                return subs;
+                            };
+                            const rebuild = (ind, content) => {
+                                 const parts = line.split(/\s+/);
+                                 const indicators = parts.length >= 3 ? parts.slice(1, 3).join(" ") : "  ";
+                                 return `=${tag} ${indicators} ${content}`;
+                            };
+
+                            if (tag === '245') {
+                                const s = getSubs();
+                                let a = cleanEnd(s['a']);
+                                let b = cleanEnd(s['b']);
+                                let c = cleanEnd(s['c']);
+                                let content = b ? `$a${a} :$b${b} /$c${c}` : `$a${a} /$c${c}`;
+                                return rebuild("10", content);
+                            }
+                            
+                            if (tag === '260') {
+                                const s = getSubs();
+                                let a = cleanEnd(s['a']);
+                                let b = cleanEnd(s['b']);
+                                let c = cleanEnd(s['c']);
+                                
+                                let bPunct = c ? "," : ".";
+                                let content = `$a${a} :$b${b}${bPunct}$c${c}.`;
+                                return rebuild("  ", content);
+                            }
+
+                            if (tag === '300') {
+                                const s = getSubs();
+                                let a = (s['a'] || '').replace(/pages/gi, 'p.');
+                                a = cleanEnd(a);
+                                let b = cleanEnd(s['b']);
+                                let c = cleanEnd(s['c']);
+
+                                let content = "";
+                                if (a) content += `$a${a}` + (b ? " :" : (c ? " ;" : ""));
+                                if (b) content += `$b${b}` + (c ? " ;" : "");
+                                if (c) content += `$c${c}.`;
+                                
+                                return rebuild("  ", content);
+                            }
+                        }
+                        return line;
+                    });
+                    return lines.join('\n');
+                });
+                updateMarcPreview();
+                showToast("Punctuation Cleaned & Applied (MARC).");
+            }
+        }
+
+        function downloadCSV(type) {
+            const { headers, rows } = appState[type];
+            let csv = "data:text/csv;charset=utf-8,";
+            csv += headers.join(",") + "\r\n";
+            rows.forEach(r => {
+                const row = headers.map(h => {
+                    let v = (r[h] || '').toString().replace(/"/g, '""');
+                    return `"${v}"`;
+                }).join(",");
+                csv += row + "\r\n";
+            });
+            const link = document.createElement("a");
+            link.href = encodeURI(csv);
+            link.download = `processed_${type}.csv`;
+            link.click();
+        }
+
+        // ================= EXCEL TO MARC GENERATOR (UPDATED) =================
+        function generateMARCFromExcel() {
+            if(appState.excel.rows.length === 0) return showToast("Upload Excel file first.");
+
+            const staticData = {
+                b942: document.getElementById('excel-942b').value,
+                c942: document.getElementById('excel-942c').value,
+                y952: document.getElementById('excel-952y').value,
+                a952: document.getElementById('excel-952a').value,
+                b952: document.getElementById('excel-952b').value
+            };
+
+            const marcRecords = appState.excel.rows.map(row => {
+                let recordLines = [];
+                const addLine = (tag, ind, content) => {
+                    if(content) recordLines.push(`=${tag}  ${ind}${content}`);
+                };
+
+                if(row['LDR']) recordLines.push(row['LDR']);
+                if(row['008']) recordLines.push(row['008']);
+                if(row['100$a']) addLine('100', '1 ', `$a${row['100$a']}`);
+                addLine('020', '\\', `$a${row['020$a'] || ''}`);
+                addLine('040', '\\', `$aDLC$cDLC$dDLC`);
+                
+                let cn050 = "", cn060 = "";
+                if(row['060$a']) { cn060 = row['060$a']; if(row['060$b']) cn060 += " " + row['060$b']; }
+                else if(row['050$a']) { cn050 = row['050$a']; if(row['050$b']) cn050 += " " + row['050$b']; }
+                let callNumber = cn060 || cn050;
+
+                addLine('050', '00', `$a${row['050$a'] || ''}$b${row['050$b'] || ''}`);
+                addLine('245', '10', `$a${row['245$a'] || ''}$b${row['245$b'] || ''}$c${row['245$c'] || ''}`);
+                addLine('260', '\\', `$a${row['260$a'] || ''}$b${row['260$b'] || ''}$c${row['260$c'] || ''}`);
+                addLine('300', '\\', `$a${row['300$a'] || ''}$b${row['300$b'] || ''}$c${row['300$c'] || ''}`);
+
+                let barcode = row['541$e'] || row['952$p'] || "";
+                if(barcode) {
+                    const clean = barcode.toString().replace(/\D/g, '');
+                    barcode = clean.padStart(8, '0');
+                }
+                addLine('541', '\\', `$e${barcode}`);
+
+                if(row['650_full']) {
+                    let subjects = row['650_full'].split(/\s*\|\|\s*/);
+                    subjects.forEach(sub => {
+                        let s = sub.trim();
+                        if(s) {
+                            s = s.replace(/^=650\s+[0-9\\]+/, '').trim();
+                            recordLines.push(`=650  \\0${s}`);
+                        }
+                    });
+                }
+
+                addLine('900', '\\', '$d');
+                addLine('900', '\\', '$c');
+                addLine('900', '\\', '$b');
+                addLine('900', '\\', '$aOriginal Print');
+
+                let line942 = "=942  \\\\"; 
+                if(staticData.b942) line942 += `$b${staticData.b942}`;
+                if(staticData.c942) line942 += `$c${staticData.c942}`;
+                if(line942 !== "=942  \\\\") recordLines.push(line942);
+
+                let line952 = "=952  \\\\";
+                if(barcode) line952 += `$p${barcode}`;
+                if(staticData.y952) line952 += `$y${staticData.y952}`;
+                if(callNumber) line952 += `$o${callNumber}`;
+                if(staticData.a952) line952 += `$a${staticData.a952}`;
+                if(staticData.b952) line952 += `$b${staticData.b952}`;
+                if(line952 !== "=952  \\\\") recordLines.push(line952);
+
+                return recordLines.join('\n');
+            });
+
+            const content = marcRecords.join('\n\n');
+            const blob = new Blob([content], { type: 'text/plain' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = "generated_from_excel.txt";
+            link.click();
+            showToast("MARC File Generated from Excel!");
+        }
+
+        // ================= MARC TEXT LOGIC =================
+
+        document.getElementById('file-marc').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if(!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const text = e.target.result;
+                const lines = text.split(/\r?\n/);
+                let records = [];
+                let currentRecordLines = [];
+
+                lines.forEach(line => {
+                    const trimmedLine = line.trim();
+                    if (trimmedLine === '') {
+                        if (currentRecordLines.length > 0) {
+                            records.push(currentRecordLines.join('\n'));
+                            currentRecordLines = [];
+                        }
+                    } else if (trimmedLine.startsWith('=LDR')) {
+                        if (currentRecordLines.length > 0) {
+                            records.push(currentRecordLines.join('\n'));
+                        }
+                        currentRecordLines = [line];
+                    } else {
+                        currentRecordLines.push(line);
+                    }
+                });
+
+                if (currentRecordLines.length > 0) {
+                    records.push(currentRecordLines.join('\n'));
+                }
+
+                appState.marc.rawRecords = records;
+                
+                document.getElementById('file-info-marc').textContent = `Loaded: ${file.name} (${appState.marc.rawRecords.length} records)`;
+                document.getElementById('dl-marc').style.display = 'inline-block';
+                updateMarcPreview();
+                showToast(`${file.name} loaded!`);
+            };
+            reader.readAsText(file);
+        });
+
+        function updateMarcPreview() {
+            const preview = document.getElementById('marc-preview');
+            if(appState.marc.rawRecords.length === 0) {
+                preview.textContent = "No Data Loaded...";
+                return;
+            }
+            const content = appState.marc.rawRecords.join('\n\n');
+            preview.textContent = content.length > 5000 ? content.substring(0, 5000) + "\n... (truncated)" : content;
+        }
+
+        // ================= EXPORT MARC TO CSV (UPDATED WITH 100) =================
+        function exportMARCtoCSV() {
+            if(appState.marc.rawRecords.length === 0) return showToast("No MARC data to export.");
+
+            const headers = ['LDR', '008', '020$a', '100$a', '050$a', '050$b', '060$a', '060$b', 
+                             '245$a', '245$b', '245$c', 
+                             '260$a', '260$b', '260$c', 
+                             '300$a', '300$b', '300$c', 
+                             '541$e', '650_full'];
+
+            const rows = appState.marc.rawRecords.map(record => {
+                let rowObj = {};
+                let subjects = [];
+
+                const lines = record.split('\n');
+                lines.forEach(line => {
+                    const tagMatch = line.match(/^=(\d{3})/);
+                    if(tagMatch) {
+                        const tag = tagMatch[1];
+                        const getSub = (code) => {
+                            const m = line.match(new RegExp(`\\$${code}([^$]*)`));
+                            return m ? m[1].trim() : '';
+                        };
+
+                        if (tag === 'LDR') rowObj['LDR'] = line;
+                        else if (tag === '008') rowObj['008'] = line;
+                        else if (tag === '020') rowObj['020$a'] = getSub('a');
+                        else if (tag === '100') rowObj['100$a'] = getSub('a');
+                        else if (tag === '050') { rowObj['050$a'] = getSub('a'); rowObj['050$b'] = getSub('b'); }
+                        else if (tag === '060') { rowObj['060$a'] = getSub('a'); rowObj['060$b'] = getSub('b'); }
+                        else if (tag === '245') { rowObj['245$a'] = getSub('a'); rowObj['245$b'] = getSub('b'); rowObj['245$c'] = getSub('c'); }
+                        else if (tag === '260') { rowObj['260$a'] = getSub('a'); rowObj['260$b'] = getSub('b'); rowObj['260$c'] = getSub('c'); }
+                        else if (tag === '300') { rowObj['300$a'] = getSub('a'); rowObj['300$b'] = getSub('b'); rowObj['300$c'] = getSub('c'); }
+                        else if (tag === '541') rowObj['541$e'] = getSub('e');
+                        else if (tag === '650') {
+                            let content = line.replace(/^=650\s+[0-9\\]+/, '').trim();
+                            subjects.push(content);
+                        }
+                    }
+                });
+
+                if(subjects.length > 0) rowObj['650_full'] = subjects.join(' || ');
+                else rowObj['650_full'] = '';
+
+                return rowObj;
+            });
+
+            let csv = "data:text/csv;charset=utf-8,";
+            csv += headers.join(",") + "\r\n";
+
+            rows.forEach(r => {
+                const rowStr = headers.map(h => {
+                    let v = (r[h] || '').toString().replace(/"/g, '""');
+                    return `"${v}"`;
+                }).join(",");
+                csv += rowStr + "\r\n";
+            });
+
+            const link = document.createElement("a");
+            link.href = encodeURI(csv);
+            link.download = "marc_export.csv";
+            link.click();
+            showToast("MARC Exported to CSV (650 subjects combined & 100 included)!");
+        }
+
+        function generateMarcLines() {
+            if(appState.marc.rawRecords.length === 0) return showToast("Upload file first.");
+            const staticData = {
+                b942: document.getElementById('marc-942b').value,
+                c942: document.getElementById('marc-942c').value,
+                y952: document.getElementById('marc-952y').value,
+                a952: document.getElementById('marc-952a').value,
+                b952: document.getElementById('marc-952b').value
+            };
+
+            const newRecords = appState.marc.rawRecords.map(record => {
+                const lines = record.split('\n');
+                let cn050 = "";
+                let cn060 = "";
+                let barcode = "";
+
+                lines.forEach(line => {
+                    if (line.match(/^=050/)) {
+                        const aMatch = line.match(/\$a([^$]*)/);
+                        const bMatch = line.match(/\$b([^$]*)/);
+                        if (aMatch) { cn050 = aMatch[1].trim(); if (bMatch) cn050 += " " + bMatch[1].trim(); }
+                    }
+                    if (line.match(/^=060/)) {
+                        const aMatch = line.match(/\$a([^$]*)/);
+                        const bMatch = line.match(/\$b([^$]*)/);
+                        if (aMatch) { cn060 = aMatch[1].trim(); if (bMatch) cn060 += " " + bMatch[1].trim(); }
+                    }
+                    const bcMatch = line.match(/^=541.*?\$e([^$\n]+)/);
+                    if (bcMatch) {
+                        let bc = bcMatch[1].trim().replace(/\D/g, '');
+                        if(bc) barcode = bc.padStart(8, '0');
+                    }
+                });
+
+                let callNumber = "";
+                if (cn060) callNumber = cn060;
+                else if (cn050) callNumber = cn050;
+
+                let appendedLines = "";
+                
+                let line942 = "=942  \\\\"; 
+                if(staticData.b942) line942 += `$b${staticData.b942}`;
+                if(staticData.c942) line942 += `$c${staticData.c942}`;
+                if(line942 !== "=942  \\\\") appendedLines += `\n${line942}`;
+
+                let line952 = "=952  \\\\";
+                if(barcode) line952 += `$p${barcode}`;
+                if(staticData.y952) line952 += `$y${staticData.y952}`;
+                if(callNumber.trim()) line952 += `$o${callNumber.trim()}`;
+                if(staticData.a952) line952 += `$a${staticData.a952}`;
+                if(staticData.b952) line952 += `$b${staticData.b952}`;
+                if(line952 !== "=952  \\\\") appendedLines += `\n${line952}`;
+
+                return record + appendedLines;
+            });
+
+            appState.marc.rawRecords = newRecords;
+            updateMarcPreview();
+            showToast("Tags appended successfully!");
+        }
+
+        function downloadMarcFile() {
+            if(appState.marc.rawRecords.length === 0) return;
+            const content = appState.marc.rawRecords.join('\n\n');
+            const blob = new Blob([content], { type: 'text/plain' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = "processed_marc_data.txt";
+            link.click();
+        }
+    </script>
+
+</body>
+</html>
