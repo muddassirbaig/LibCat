@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LibCat Pro (Library Bibliographic Manager)</title>
+    <title>LibCat Pro (MARC Bibliographic Manager)</title>
     <style>
         /* ================= GLOBAL STYLES ================= */
         :root {
@@ -21,18 +21,7 @@
 
         body { background-color: var(--bg-color); color: var(--text-color); line-height: 1.6; padding-bottom: 50px; }
 
-        /* Header - UPDATED FOR LOGOUT BUTTON */
-        header { 
-            background-color: var(--primary-color); 
-            color: white; 
-            padding: 1.5rem 2rem; 
-            /* Flexbox to align Title Left and Logout Right */
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
-        }
-        
+        header { background-color: var(--primary-color); color: white; padding: 1.5rem 2rem; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         .header-content h1 { font-size: 1.8rem; margin-bottom: 0.5rem; }
         .header-content p { font-size: 0.9rem; opacity: 0.8; }
 
@@ -59,6 +48,12 @@
         .form-group label { display: block; margin-bottom: 5px; font-weight: 600; font-size: 0.9rem; }
         .form-group input, .form-group select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 0.95rem; }
         .form-group input:focus { outline: none; border-color: var(--accent-color); }
+
+        /* Radio Button Group Style */
+        .radio-group { margin-top: 15px; padding-top: 15px; border-top: 1px dashed #ccc; }
+        .radio-group label { display: inline-flex; align-items: center; margin-right: 15px; font-weight: normal; cursor: pointer; }
+        .radio-group input[type="radio"] { margin-right: 5px; }
+        .radio-group-header { color: var(--accent-color); font-weight: bold; display: block; margin-bottom: 10px; }
 
         /* Buttons */
         .btn { display: inline-block; padding: 10px 20px; background-color: var(--success-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.95rem; transition: background 0.2s; margin-right: 5px; }
@@ -112,7 +107,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0, 0, 0, 0.98); /* Very dark background */
+            background-color: rgba(0, 0, 0, 0.98);
             z-index: 999999;
             display: flex;
             justify-content: center;
@@ -130,45 +125,11 @@
             max-width: 400px;
         }
 
-        .login-box h2 {
-            margin-bottom: 20px;
-            color: var(--primary-color);
-        }
-
-        .login-input {
-            width: 100%;
-            padding: 12px;
-            margin-bottom: 20px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            font-size: 1rem;
-            text-align: center;
-        }
-
-        .login-btn {
-            width: 100%;
-            padding: 12px;
-            background-color: var(--primary-color);
-            color: white;
-            border: none;
-            border-radius: 5px;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: background 0.3s;
-        }
-
-        .login-btn:hover {
-            background-color: #1a252f;
-        }
-
-        #login-msg {
-            margin-top: 15px;
-            color: #c0392b;
-            font-weight: bold;
-            font-size: 0.9rem;
-        }
-
-        /* Hide the main app until logged in */
+        .login-box h2 { margin-bottom: 20px; color: var(--primary-color); }
+        .login-input { width: 100%; padding: 12px; margin-bottom: 20px; border: 1px solid #ccc; border-radius: 5px; font-size: 1rem; text-align: center; }
+        .login-btn { width: 100%; padding: 12px; background-color: var(--primary-color); color: white; border: none; border-radius: 5px; font-size: 1rem; cursor: pointer; transition: background 0.3s; }
+        .login-btn:hover { background-color: #1a252f; }
+        #login-msg { margin-top: 15px; color: #c0392b; font-weight: bold; font-size: 0.9rem; }
         #app-container { display: none; }
     </style>
 </head>
@@ -177,7 +138,7 @@
     <!-- ================= LOGIN OVERLAY ================= -->
     <div id="login-overlay">
         <div class="login-box">
-            <h2>LibCat Library Manager Login</h2>
+            <h2>Library Manager Login</h2>
             <input type="password" id="login-pass" class="login-input" placeholder="Enter Password" onkeydown="if(event.key === 'Enter') checkLogin()">
             <button class="login-btn" onclick="checkLogin()">Login</button>
             <div id="login-msg"></div>
@@ -188,10 +149,9 @@
     <div id="app-container">
         <header>
             <div class="header-content">
-                <h1>LibCat Pro (Library Bibliographic Manager)</h1>
-                <p>Koha Compatible MARC & Excel Processing Tool</p>
+                <h1>📚 LibCat Pro (MARC Bibliographic Manager)</h1>
+                <p>Professional MARC Data Processing for Koha-ILS</p>
             </div>
-            <!-- NEW LOGOUT BUTTON -->
             <button class="btn btn-secondary" onclick="logoutUser()">Logout</button>
         </header>
 
@@ -227,6 +187,15 @@
                             <div class="form-group"><label>952$a</label><input type="text" id="excel-952a"></div>
                             <div class="form-group"><label>952$b</label><input type="text" id="excel-952b"></div>
                         </div>
+                        
+                        <!-- CALL NUMBER SELECTOR (EXCEL) -->
+                        <div class="radio-group">
+                            <span class="radio-group-header">Select Call Number Source for 952$o:</span>
+                            <label><input type="radio" name="cn-source-excel" value="050" checked> 050 (LC)</label>
+                            <label><input type="radio" name="cn-source-excel" value="060"> 060 (NLM)</label>
+                            <label><input type="radio" name="cn-source-excel" value="082"> 082 (Dewey)</label>
+                        </div>
+
                         <button class="btn btn-action" onclick="processExcelData()">Add Static Tags</button>
                     </div>
 
@@ -279,6 +248,14 @@
                         <div class="form-group"><label>952$a</label><input type="text" id="marc-952a"></div>
                         <div class="form-group"><label>952$b</label><input type="text" id="marc-952b"></div>
                     </div>
+
+                    <!-- CALL NUMBER SELECTOR (MARC) -->
+                    <div class="radio-group">
+                        <span class="radio-group-header">Select Call Number Source for 952$o:</span>
+                        <label><input type="radio" name="cn-source-marc" value="050" checked> 050 (LC)</label>
+                        <label><input type="radio" name="cn-source-marc" value="060"> 060 (NLM)</label>
+                        <label><input type="radio" name="cn-source-marc" value="082"> 082 (Dewey)</label>
+                    </div>
                 </div>
 
                 <!-- MARC Operations -->
@@ -297,7 +274,7 @@
                         </div>
                     </div>
                     <p class="helper-text" style="margin-top:10px;">
-                        <strong>Updates:</strong> Export now includes 100$a. Punctuation fixes 260 Year & 300 Semicolon logic.
+                        <strong>Updates:</strong> Added Radio Button Selection for Call Numbers (050, 060, 082) for both Excel & MARC modes.
                     </p>
                 </div>
 
@@ -315,8 +292,23 @@
     <div id="toast">Message</div>
 
     <script>
+        // ================= GLOBAL HELPERS =================
+        function cleanEnd(str) {
+            if(!str) return "";
+            return str.replace(/[.,\/;:\s]+$/, '').trim();
+        }
+
+        // NEW: Get Selected Call Number Source
+        function getSelectedCNSource(tabType) {
+            const name = `cn-source-${tabType}`;
+            const radios = document.getElementsByName(name);
+            for (let r of radios) {
+                if (r.checked) return r.value;
+            }
+            return '050'; // Default fallback
+        }
+
         // ================= LOGIN LOGIC =================
-        // Aap yahan se apna password change kar sakte hain
         const CORRECT_PASSWORD = "Pwd@0487"; 
 
         function checkLogin() {
@@ -324,7 +316,6 @@
             var msgBox = document.getElementById("login-msg");
 
             if (inputPass === CORRECT_PASSWORD) {
-                // App show karein
                 document.getElementById("login-overlay").style.display = "none";
                 document.getElementById("app-container").style.display = "block";
                 msgBox.innerText = "";
@@ -336,13 +327,9 @@
             }
         }
 
-        // ================= NEW: LOGOUT LOGIC =================
         function logoutUser() {
-            // App hide karein
             document.getElementById("app-container").style.display = "none";
-            // Login screen wapas show karein
             document.getElementById("login-overlay").style.display = "flex";
-            // Password field clear karein
             document.getElementById("login-pass").value = "";
             document.getElementById("login-msg").innerText = "";
             showToast("Logged out successfully.");
@@ -478,6 +465,7 @@
         }
 
         function mergeCallNumbers(type) {
+            // Kept for backward compatibility
             if(type === 'excel') {
                 if(!appState.excel.rows.length) return showToast("Upload file first.");
                 const rows = appState.excel.rows;
@@ -494,7 +482,7 @@
                     if(cn.trim()) r['952$o'] = cn.trim();
                 });
                 renderTable('excel');
-                showToast("Call numbers merged.");
+                showToast("Call numbers merged (Standard Logic).");
             } else {
                 updateMarcPreview();
                 showToast("Call number logic queued.");
@@ -512,7 +500,7 @@
                     let bc = r['541$e'] || r['952$p'] || "";
                     if(bc) {
                         const clean = bc.toString().replace(/\D/g,'');
-                        r['952$p'] = clean.padStart(8, '0');
+                        r['952$p'] = cleanEnd(bc).padStart(8, '0'); 
                         count++;
                     }
                 });
@@ -524,13 +512,7 @@
             }
         }
 
-        // ================= CLEAN PUNCTUATION LOGIC (UPDATED) =================
         function applyPunctuation(type) {
-            const cleanEnd = (str) => {
-                if(!str) return "";
-                return str.replace(/[.,\/;:]$/, '').trim();
-            };
-
             const process = (row) => {
                 // --- 245 LOGIC ---
                 let a245 = cleanEnd(row['245$a']);
@@ -545,7 +527,7 @@
                 }
                 row['245$c'] = c245;
 
-                // --- 260 LOGIC (FIXED) ---
+                // --- 260 LOGIC ---
                 let a260 = cleanEnd(row['260$a']);
                 let b260 = cleanEnd(row['260$b']);
                 let c260 = cleanEnd(row['260$c']);
@@ -565,29 +547,33 @@
                     row['260$c'] = "";
                 }
 
-                // --- 300 LOGIC (FIXED SEMICOLON) ---
+                // --- 300 LOGIC ---
                 let a300 = (row['300$a'] || '').replace(/pages/gi, 'p.');
                 a300 = cleanEnd(a300);
                 
                 let b300 = cleanEnd(row['300$b']);
                 let c300 = cleanEnd(row['300$c']);
 
-                if (a300) {
-                    row['300$a'] = a300 + (b300 ? " :" : (c300 ? " ;" : ""));
-                } else {
-                    row['300$a'] = "";
-                }
-
                 if (b300) {
-                    row['300$b'] = b300 + (c300 ? " ;" : "");
+                    let hasRomans = /^[ivxlcdm]+(\s|$)/.test(a300);
+                    
+                    if (hasRomans) {
+                        row['300$a'] = a300 + " :";
+                    } else {
+                        row['300$a'] = a300 + " ;";
+                    }
+                    
+                    if (c300) row['300$b'] = b300 + " ;";
+                    else row['300$b'] = b300 + ".";
+                    
+                    if (c300) row['300$c'] = c300 + ".";
                 } else {
-                    row['300$b'] = "";
-                }
-
-                if (c300) {
-                    row['300$c'] = c300 + ".";
-                } else {
-                    row['300$c'] = "";
+                    if (c300) {
+                        row['300$a'] = a300 + " ;";
+                        row['300$c'] = c300 + ".";
+                    } else if (!b300 && !c300) {
+                        row['300$a'] = a300 + ".";
+                    }
                 }
             };
 
@@ -645,10 +631,25 @@
                                 let c = cleanEnd(s['c']);
 
                                 let content = "";
-                                if (a) content += `$a${a}` + (b ? " :" : (c ? " ;" : ""));
-                                if (b) content += `$b${b}` + (c ? " ;" : "");
-                                if (c) content += `$c${c}.`;
                                 
+                                if (b) {
+                                    let hasRomans = /^[ivxlcdm]+(\s|$)/.test(a);
+                                    if (hasRomans) {
+                                        content += `$a${a} :$b${b}`;
+                                        if(c) content += ` ;$c${c}.`;
+                                        else content += ".";
+                                    } else {
+                                        content += `$a${a} ;$b${b}`;
+                                        if(c) content += ` ;$c${c}.`;
+                                        else content += ".";
+                                    }
+                                } else {
+                                    if(c) {
+                                        content += `$a${a} ;$c${c}.`;
+                                    } else {
+                                        content += `$a${a}.`;
+                                    }
+                                }
                                 return rebuild("  ", content);
                             }
                         }
@@ -678,7 +679,7 @@
             link.click();
         }
 
-        // ================= EXCEL TO MARC GENERATOR (UPDATED) =================
+        // ================= EXCEL TO MARC GENERATOR (UPDATED & COMPLETE) =================
         function generateMARCFromExcel() {
             if(appState.excel.rows.length === 0) return showToast("Upload Excel file first.");
 
@@ -689,6 +690,9 @@
                 a952: document.getElementById('excel-952a').value,
                 b952: document.getElementById('excel-952b').value
             };
+
+            // NEW: Get Selected Source
+            const cnSource = getSelectedCNSource('excel');
 
             const marcRecords = appState.excel.rows.map(row => {
                 let recordLines = [];
@@ -702,12 +706,11 @@
                 addLine('020', '\\', `$a${row['020$a'] || ''}`);
                 addLine('040', '\\', `$aDLC$cDLC$dDLC`);
                 
-                let cn050 = "", cn060 = "";
-                if(row['060$a']) { cn060 = row['060$a']; if(row['060$b']) cn060 += " " + row['060$b']; }
-                else if(row['050$a']) { cn050 = row['050$a']; if(row['050$b']) cn050 += " " + row['050$b']; }
-                let callNumber = cn060 || cn050;
-
+                // Keep all original CN tags intact
                 addLine('050', '00', `$a${row['050$a'] || ''}$b${row['050$b'] || ''}`);
+                if(row['060$a']) addLine('060', '00', `$a${row['060$a'] || ''}$b${row['060$b'] || ''}`);
+                if(row['082$a']) addLine('082', '00', `$a${row['082$a'] || ''}`);
+
                 addLine('245', '10', `$a${row['245$a'] || ''}$b${row['245$b'] || ''}$c${row['245$c'] || ''}`);
                 addLine('260', '\\', `$a${row['260$a'] || ''}$b${row['260$b'] || ''}$c${row['260$c'] || ''}`);
                 addLine('300', '\\', `$a${row['300$a'] || ''}$b${row['300$b'] || ''}$c${row['300$c'] || ''}`);
@@ -740,10 +743,22 @@
                 if(staticData.c942) line942 += `$c${staticData.c942}`;
                 if(line942 !== "=942  \\\\") recordLines.push(line942);
 
+                // NEW LOGIC: Build Call Number based on Radio Selection
+                let callNumber = "";
+                if(cnSource === '050') {
+                    if(row['050$a']) callNumber = row['050$a'];
+                    if(row['050$b']) callNumber += " " + row['050$b'];
+                } else if (cnSource === '060') {
+                    if(row['060$a']) callNumber = row['060$a'];
+                    if(row['060$b']) callNumber += " " + row['060$b'];
+                } else if (cnSource === '082') {
+                    if(row['082$a']) callNumber = row['082$a'];
+                }
+
                 let line952 = "=952  \\\\";
                 if(barcode) line952 += `$p${barcode}`;
                 if(staticData.y952) line952 += `$y${staticData.y952}`;
-                if(callNumber) line952 += `$o${callNumber}`;
+                if(callNumber.trim()) line952 += `$o${callNumber.trim()}`;
                 if(staticData.a952) line952 += `$a${staticData.a952}`;
                 if(staticData.b952) line952 += `$b${staticData.b952}`;
                 if(line952 !== "=952  \\\\") recordLines.push(line952);
@@ -757,7 +772,7 @@
             link.href = URL.createObjectURL(blob);
             link.download = "generated_from_excel.txt";
             link.click();
-            showToast("MARC File Generated from Excel!");
+            showToast("MARC File Generated with Selected Call Number!");
         }
 
         // ================= MARC TEXT LOGIC =================
@@ -813,7 +828,7 @@
             preview.textContent = content.length > 5000 ? content.substring(0, 5000) + "\n... (truncated)" : content;
         }
 
-        // ================= EXPORT MARC TO CSV (UPDATED WITH 100) =================
+        // ================= EXPORT MARC TO CSV =================
         function exportMARCtoCSV() {
             if(appState.marc.rawRecords.length === 0) return showToast("No MARC data to export.");
 
@@ -888,12 +903,14 @@
                 b952: document.getElementById('marc-952b').value
             };
 
+            // NEW: Get Selected Source for MARC Mode
+            const cnSource = getSelectedCNSource('marc');
+
             const newRecords = appState.marc.rawRecords.map(record => {
                 const lines = record.split('\n');
-                let cn050 = "";
-                let cn060 = "";
-                let barcode = "";
+                let cn050 = "", cn060 = "", cn082 = "", barcode = "";
 
+                // Extract all possible Call Numbers first
                 lines.forEach(line => {
                     if (line.match(/^=050/)) {
                         const aMatch = line.match(/\$a([^$]*)/);
@@ -905,6 +922,10 @@
                         const bMatch = line.match(/\$b([^$]*)/);
                         if (aMatch) { cn060 = aMatch[1].trim(); if (bMatch) cn060 += " " + bMatch[1].trim(); }
                     }
+                    if (line.match(/^=082/)) {
+                        const aMatch = line.match(/\$a([^$]*)/);
+                        if (aMatch) { cn082 = aMatch[1].trim(); }
+                    }
                     const bcMatch = line.match(/^=541.*?\$e([^$\n]+)/);
                     if (bcMatch) {
                         let bc = bcMatch[1].trim().replace(/\D/g, '');
@@ -912,9 +933,11 @@
                     }
                 });
 
+                // NEW LOGIC: Select Call Number based on Radio Button
                 let callNumber = "";
-                if (cn060) callNumber = cn060;
-                else if (cn050) callNumber = cn050;
+                if(cnSource === '050') callNumber = cn050;
+                else if (cnSource === '060') callNumber = cn060;
+                else if (cnSource === '082') callNumber = cn082;
 
                 let appendedLines = "";
                 
@@ -936,7 +959,7 @@
 
             appState.marc.rawRecords = newRecords;
             updateMarcPreview();
-            showToast("Tags appended successfully!");
+            showToast("Tags appended with Selected Call Number!");
         }
 
         function downloadMarcFile() {
